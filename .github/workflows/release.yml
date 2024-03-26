@@ -3,9 +3,7 @@ name: Release Helm Packages
 on:
   push:
     tags:
-      - 'iris-manager-v*'
-      - 'iris-router-v*'
-      - 'iris-subscription-v*'
+      - 'v*'
 jobs:
   wait:
     runs-on: ubuntu-latest
@@ -21,19 +19,19 @@ jobs:
   release:
     needs: [ wait ]
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        package: [
+          iris-manager,
+          iris-router,
+          iris-subscription
+        ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: 'src'
           fetch-depth: 0
-
-      - name: Get folder and version
-        uses: winterjung/split@v2
-        id: split
-        with:
-          msg: ${{ github.ref }}
-          separator: '-v'
 
       - name: Install Helm
         uses: azure/setup-helm@v3
@@ -45,19 +43,17 @@ jobs:
           echo "src/${FOLDER}/"
           helm package "src/${FOLDER}/" -u -d dest --version ${VERSION}
         env:
-          FOLDER: ${{ steps.split.outputs._1 }}
-          VERSION: v${{ steps.split.outputs._2 }}
+          FOLDER: ${{ matrix.package }}
+          VERSION: "${{ github.ref_name }}"
           
       - name: Chart | Push
         uses: appany/helm-oci-chart-releaser@v0.4.1
         with:
-          name: ${FOLDER}
+          name: ${{ matrix.package }}
           repository: iris-events/iris-charts
-          path: src/${FOLDER}
-          tag: ${VERSION}
+          path: "src/${{ matrix.package }}"
+          tag: "${{ github.ref_name }}"
           registry: ghcr.io
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          FOLDER: ${{ steps.split.outputs._1 }}
-          VERSION: v${{ steps.split.outputs._2 }}
+
