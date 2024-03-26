@@ -1,0 +1,63 @@
+name: Release Helm Packages
+
+on:
+  push:
+    tags:
+      - 'iris-manager-v*'
+      - 'iris-router-v*'
+      - 'iris-subscription-v*'
+jobs:
+  wait:
+    runs-on: ubuntu-latest
+    name: Wait for tests
+    steps:
+      - name: Wait for tests to succeed
+        uses: lewagon/wait-on-check-action@v1.3.3
+        with:
+          ref: "${{ github.sha }}"
+          running-workflow-name: 'test'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          check-regexp: run-tests.*
+  release:
+    needs: [ wait ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: 'src'
+          fetch-depth: 0
+
+      - name: Get folder and version
+        uses: winterjung/split@v2
+        id: split
+        with:
+          msg: ${{ github.ref }}
+          separator: '-v'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Package Helm Charts
+        shell: bash
+        run: |
+          find src/${FOLDER}/ -type f -name 'Chart.yaml' | sed -r 's|/[^/]+$||' | sort | uniq | xargs -L 1 helm dep up
+          echo "src/${FOLDER}/"
+          helm package "src/${FOLDER}/" -u -d dest --version ${VERSION}
+        env:
+          FOLDER: ${{ steps.split.outputs._1 }}
+          VERSION: v${{ steps.split.outputs._2 }}
+          
+      - name: Chart | Push
+        uses: appany/helm-oci-chart-releaser@v0.4.1
+        with:
+          name: ${FOLDER}
+          repository: iris-events/iris-charts
+          path: src/${FOLDER}
+          tag: ${VERSION}
+          registry: ghcr.io
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          FOLDER: ${{ steps.split.outputs._1 }}
+          VERSION: v${{ steps.split.outputs._2 }}
