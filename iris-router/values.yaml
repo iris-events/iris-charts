@@ -59,6 +59,14 @@ extraEnv:
   # - name: MY_SPECIAL_ENV
   #   value: verySpecialValue
 
+# Load env variables from existing configMapRef or secretRef
+envFrom:
+  []
+  # - configMapRef:
+  #     name: shared-config
+  # - secretRef:
+  #     name: existing-secret
+
 service:
   type: ClusterIP
   port: 8080
