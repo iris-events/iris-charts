@@ -39,6 +39,9 @@ spec:
           envFrom:
           - secretRef:
               name: {{ include "iris-subscription.fullname" . }}
+          {{- if .Values.envFrom }}
+            {{- toYaml .Values.envFrom | nindent 10 }}
+          {{- end }}
           {{- if or .Values.extraEnv .Values.rabbitmq.existingSecret }}
           env:
           {{- if .Values.rabbitmq.existingSecret }}
