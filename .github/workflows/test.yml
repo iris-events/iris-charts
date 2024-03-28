@@ -18,9 +18,9 @@ jobs:
       fail-fast: false
       matrix:
         package: [
-          iris-manager,
-          iris-router,
-          iris-subscription
+          manager,
+          router,
+          subscription
         ]
     steps:
       - name: Checkout
