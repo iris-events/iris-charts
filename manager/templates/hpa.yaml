@@ -12,6 +12,17 @@ spec:
     name: {{ include "manager.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  {{- if or .Values.autoscaling.scaleUpStabilizationWindowSeconds .Values.autoscaling.scaleDownStabilizationWindowSeconds }}
+  behavior:
+    {{- if .Values.autoscaling.scaleUpStabilizationWindowSeconds }}
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleUpStabilizationWindowSeconds }}
+    {{- end }}
+    {{- if .Values.autoscaling.scaleDownStabilizationWindowSeconds }}
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDownStabilizationWindowSeconds }}
+    {{- end }}
+  {{- end }}
   metrics:
     {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
